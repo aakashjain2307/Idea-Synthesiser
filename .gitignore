@@ -1,0 +1,15 @@
+.env
+.env*.local
+.next
+.turbo
+node_modules
+dist
+coverage
+tsconfig.tsbuildinfo
+prisma/dev.db
+prisma/dev.db-journal
+.idea-synthesizer
+Last30Days
+outputs
+.DS_Store
+*.log

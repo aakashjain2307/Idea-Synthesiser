@@ -1,0 +1,219 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model ResearchRun {
+  id                String          @id @default(cuid())
+  topic             String
+  lookbackDays      Int             @default(30)
+  status            String          @default("draft")
+  manualEvidence    String?
+  githubLanguages   String?
+  githubTopics      String?
+  last30daysRawPath String?
+  last30daysPlan    String?
+  last30daysStdout  String?
+  sourceCoverage    String?
+  warnings          String?
+  error             String?
+  createdAt         DateTime        @default(now())
+  updatedAt         DateTime        @updatedAt
+  evidenceItems     EvidenceItem[]
+  projectSignals    ProjectSignal[]
+  clusters          Cluster[]
+  opportunities     Opportunity[]
+  sourceRuns        SourceRun[]
+  savedIdeas        SavedIdea[]
+}
+
+model EvidenceItem {
+  id              String      @id @default(cuid())
+  runId           String
+  run             ResearchRun @relation(fields: [runId], references: [id], onDelete: Cascade)
+  source          String
+  externalId      String?
+  title           String
+  url             String?
+  body            String?
+  snippet         String?
+  author          String?
+  container       String?
+  publishedAt     DateTime?
+  engagementJson  String?
+  score           Float?
+  metadataJson    String?
+  rawJson         String?
+  createdAt       DateTime    @default(now())
+
+  @@index([runId])
+  @@index([source])
+}
+
+model ProjectSignal {
+  id              String      @id @default(cuid())
+  runId           String
+  run             ResearchRun @relation(fields: [runId], references: [id], onDelete: Cascade)
+  source          String
+  externalId      String?
+  name            String
+  fullName        String?
+  url             String?
+  description     String?
+  language        String?
+  stars           Int?
+  forks           Int?
+  openIssues      Int?
+  owner           String?
+  createdAtSource DateTime?
+  pushedAtSource  DateTime?
+  starVelocity    Float?
+  topicsJson      String?
+  metadataJson    String?
+  rawJson         String?
+  createdAt       DateTime    @default(now())
+
+  @@index([runId])
+  @@index([source])
+}
+
+model Cluster {
+  id                    String      @id @default(cuid())
+  runId                 String
+  run                   ResearchRun @relation(fields: [runId], references: [id], onDelete: Cascade)
+  externalId            String?
+  title                 String
+  score                 Float?
+  sourcesJson           String?
+  representativeIdsJson String?
+  candidateIdsJson      String?
+  rawJson               String?
+  createdAt             DateTime    @default(now())
+
+  @@index([runId])
+}
+
+model Opportunity {
+  id              String      @id @default(cuid())
+  runId           String
+  run             ResearchRun @relation(fields: [runId], references: [id], onDelete: Cascade)
+  title           String
+  targetUser      String
+  painSignal      String
+  productWedge    String
+  mvpScope        String
+  whyNow          String
+  demandScore     Int
+  noveltyScore    Int
+  feasibilityScore Int
+  businessScore   Int
+  confidenceScore Int
+  evidenceIdsJson String?
+  projectIdsJson  String?
+  status          String      @default("new")
+  notes           String?
+  isSaved         Boolean     @default(false)
+  rawJson         String?
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
+  savedIdea       SavedIdea?
+  buildArtifacts  BuildArtifact[]
+  learnArtifacts  LearnArtifact[]
+
+  @@index([runId])
+}
+
+model BuildArtifact {
+  id                 String      @id @default(cuid())
+  opportunityId      String
+  opportunity        Opportunity @relation(fields: [opportunityId], references: [id], onDelete: Cascade)
+  status             String      @default("complete")
+  productPlan        String
+  architecturePlan   String
+  implementationPlan String
+  demoHtml           String
+  agentLogsJson      String?
+  error              String?
+  createdAt          DateTime    @default(now())
+  updatedAt          DateTime    @updatedAt
+  learnArtifacts     LearnArtifact[]
+
+  @@index([opportunityId])
+}
+
+model LearnArtifact {
+  id               String         @id @default(cuid())
+  opportunityId    String
+  opportunity      Opportunity    @relation(fields: [opportunityId], references: [id], onDelete: Cascade)
+  buildArtifactId  String?
+  buildArtifact    BuildArtifact? @relation(fields: [buildArtifactId], references: [id], onDelete: SetNull)
+  status           String         @default("complete")
+  technologyMap    String
+  buildExplanation String
+  learningPath     String
+  handsOnTasks     String
+  interviewPrep    String
+  conceptChecks    String
+  agentLogsJson    String?
+  error            String?
+  createdAt        DateTime       @default(now())
+  updatedAt        DateTime       @updatedAt
+
+  @@index([opportunityId])
+  @@index([buildArtifactId])
+}
+
+model SavedIdea {
+  id            String       @id @default(cuid())
+  runId         String?
+  run           ResearchRun? @relation(fields: [runId], references: [id], onDelete: SetNull)
+  opportunityId String?      @unique
+  opportunity   Opportunity? @relation(fields: [opportunityId], references: [id], onDelete: SetNull)
+  title         String
+  notes         String?
+  snapshotJson  String?
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime     @updatedAt
+}
+
+model SourceRun {
+  id          String      @id @default(cuid())
+  runId       String
+  run         ResearchRun @relation(fields: [runId], references: [id], onDelete: Cascade)
+  source      String
+  status      String
+  startedAt   DateTime    @default(now())
+  finishedAt  DateTime?
+  countsJson  String?
+  warningsJson String?
+  error       String?
+  rawJson     String?
+
+  @@index([runId])
+  @@index([source])
+}
+
+model SourceHealth {
+  id          String   @id @default(cuid())
+  source      String   @unique
+  status      String
+  message     String
+  detailsJson String?
+  updatedAt   DateTime @updatedAt
+}
+
+model LlmProviderSetting {
+  id        String   @id @default(cuid())
+  name      String
+  provider  String   @unique
+  baseUrl   String
+  model     String
+  apiKey    String?
+  isActive  Boolean  @default(false)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
